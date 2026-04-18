@@ -1,4 +1,4 @@
-// pages/api/chat.js
+import db from "./db";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
@@ -29,12 +29,37 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-
-    // Log para debug — vai aparecer nos logs do Vercel
     console.log("Dialogflow response:", JSON.stringify(data));
 
-    const reply =
-      data?.queryResult?.fulfillmentText || "Não entendi. Pode repetir?";
+    const intent = data?.queryResult?.intent?.displayName;
+    const params = data?.queryResult?.parameters;
+    let reply = data?.queryResult?.fulfillmentText || "Não entendi. Pode repetir?";
+
+    // Salva agendamento quando o intent for finalizar_agendamento
+    if (intent === "finalizar_agendamento") {
+      const nome = params?.nome || params?.person?.name || "";
+      const placa = params?.placa || "";
+      const servico = params?.servico || "";
+      const horario = params?.horario || params?.time || "";
+
+      if (nome && placa && servico && horario) {
+        // Verifica conflito de horário
+        const [rows] = await db.query(
+          "SELECT id FROM agendamentos WHERE horario = ?",
+          [horario]
+        );
+
+        if (rows.length > 0) {
+          reply = `❌ O horário ${horario} já está ocupado! Por favor, escolha outro horário.`;
+        } else {
+          await db.query(
+            "INSERT INTO agendamentos (nome, placa, servico, horario) VALUES (?, ?, ?, ?)",
+            [nome, placa, servico, horario]
+          );
+          reply = `✅ Agendamento confirmado!\n👤 Nome: ${nome}\n🚗 Placa: ${placa}\n🧹 Serviço: ${servico}\n🕐 Horário: ${horario}`;
+        }
+      }
+    }
 
     res.status(200).json({ reply });
   } catch (err) {
@@ -43,7 +68,6 @@ export default async function handler(req, res) {
   }
 }
 
-// ✅ CORREÇÃO: base64url em vez de base64 puro
 function toBase64Url(str) {
   return btoa(str)
     .replace(/\+/g, "-")
@@ -52,7 +76,6 @@ function toBase64Url(str) {
 }
 
 async function getAccessToken(clientEmail, privateKey) {
-  // ✅ Agora header e claim também são base64url
   const header = toBase64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const now = Math.floor(Date.now() / 1000);
   const claim = toBase64Url(
@@ -84,7 +107,6 @@ async function getAccessToken(clientEmail, privateKey) {
 
   const tokenData = await tokenRes.json();
 
-  // ✅ Log para debug do token
   if (!tokenData.access_token) {
     console.error("Falha ao obter token:", JSON.stringify(tokenData));
     throw new Error("Token inválido");
