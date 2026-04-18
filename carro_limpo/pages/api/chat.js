@@ -29,6 +29,8 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
+    console.log("INTENT:", data?.queryResult?.intent?.displayName);
+    console.log("PARAMS:", JSON.stringify(data?.queryResult?.parameters));
     console.log("Dialogflow response:", JSON.stringify(data));
 
     const intent = data?.queryResult?.intent?.displayName;
