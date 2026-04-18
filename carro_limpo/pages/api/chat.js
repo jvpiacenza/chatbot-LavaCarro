@@ -39,18 +39,23 @@ export default async function handler(req, res) {
 
     // Salva agendamento quando o intent for finalizar_agendamento
     if (intent === "finalizar_agendamento") {
-      const nome = params?.nome || params?.person?.name || "";
-      const placa = params?.placa || "";
-      const servico = params?.servico || "";
-      const horario = params?.horario || params?.time || "";
-
-      if (nome && placa && servico && horario) {
-        // Verifica conflito de horário
+      const nome = params?.person?.name || "";
+      
+      // Pega dados dos contextos
+      const contextos = data?.queryResult?.outputContexts || [];
+      const ctxHorario = contextos.find(c => c.name.includes("aguardando_horario"));
+      const ctxParams = ctxHorario?.parameters || {};
+      
+      const placa = ctxParams?.any || "";
+      const horario = ctxParams?.horario || "";
+      const servico = ctxParams?.servico || "Lavagem"; // padrão se não coletar
+    
+      if (nome && placa && horario) {
         const [rows] = await db.query(
           "SELECT id FROM agendamentos WHERE horario = ?",
           [horario]
         );
-
+    
         if (rows.length > 0) {
           reply = `❌ O horário ${horario} já está ocupado! Por favor, escolha outro horário.`;
         } else {
