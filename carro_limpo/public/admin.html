@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Carro Limpo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #0077cc; --blue-dark: #005fa3; --blue-light: #e8f4fd;
+      --accent: #00c2ff; --text: #1a2332; --muted: #6b7a90;
+    }
+    body { font-family: 'DM Sans', sans-serif; background: #f5f8fc; color: var(--text); }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px; height: 68px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0,119,204,0.1);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .nav-logo-text { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--blue); letter-spacing: 1px; }
+    .nav-back { text-decoration: none; color: var(--muted); font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: color 0.2s; }
+    .nav-back:hover { color: var(--blue); }
+
+    .container { max-width: 1000px; margin: 0 auto; padding: 100px 24px 60px; }
+
+    .page-header { margin-bottom: 36px; }
+    .page-label { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--blue); margin-bottom: 8px; }
+    .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--text); letter-spacing: 0.5px; }
+    .page-subtitle { color: var(--muted); font-size: 15px; margin-top: 8px; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: white; border-radius: 14px; padding: 20px 24px; border: 1px solid rgba(0,119,204,0.1); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: var(--blue); line-height: 1; }
+    .stat-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .card { background: white; border-radius: 16px; border: 1px solid rgba(0,119,204,0.1); box-shadow: 0 2px 12px rgba(0,0,0,0.05); overflow: hidden; }
+    .card-header { padding: 20px 24px; border-bottom: 1px solid #eef2f7; display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.5px; }
+
+    .btn-refresh { background: var(--blue-light); color: var(--blue); border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.2s; }
+    .btn-refresh:hover { background: #d0e8f8; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); background: #f8fafc; border-bottom: 1px solid #eef2f7; }
+    td { padding: 16px 20px; font-size: 14px; border-bottom: 1px solid #f0f4f8; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafcff; }
+
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--blue-light); color: var(--blue); }
+    .horario { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--blue); letter-spacing: 0.5px; }
+    .placa { font-family: monospace; font-size: 13px; background: #f0f4f8; padding: 3px 8px; border-radius: 6px; font-weight: 600; letter-spacing: 1px; }
+
+    .btn-delete { background: #fff0f0; color: #cc3333; border: 1px solid #ffcccc; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+    .btn-delete:hover { background: #cc3333; color: white; border-color: #cc3333; }
+
+    .empty { text-align: center; padding: 60px 24px; color: var(--muted); }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-text { font-size: 16px; }
+
+    .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+
+    .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(100px); background: #1a2332; color: white; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 500; z-index: 999; transition: transform 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 20px; }
+      .container { padding: 90px 16px 40px; }
+      table { font-size: 13px; }
+      th, td { padding: 10px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-logo" href="/lava_jato.html">
+      <div class="nav-logo-icon">💧</div>
+      <span class="nav-logo-text">Carro Limpo</span>
+    </a>
+    <a class="nav-back" href="/lava_jato.html">← Voltar ao site</a>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <p class="page-label">Painel administrativo</p>
+      <h1 class="page-title">Agendamentos</h1>
+      <p class="page-subtitle">Gerencie todos os agendamentos realizados pelo chatbot</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-num" id="totalCount">—</div>
+        <div class="stat-label">Total de agendamentos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="hojeCount">—</div>
+        <div class="stat-label">Agendados hoje</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Lista de Agendamentos</span>
+        <button class="btn-refresh" onclick="loadAgendamentos()">🔄 Atualizar</button>
+      </div>
+      <div id="tableContainer">
+        <div class="loading">Carregando agendamentos...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    async function loadAgendamentos() {
+      const container = document.getElementById("tableContainer");
+      container.innerHTML = '<div class="loading">Carregando...</div>';
+
+      try {
+        const res = await fetch("/api/agendamentos");
+        const data = await res.json();
+
+        document.getElementById("totalCount").textContent = data.length;
+
+        const hoje = new Date().toISOString().split("T")[0];
+        const hojeCount = data.filter(a => a.criado_em?.startsWith(hoje)).length;
+        document.getElementById("hojeCount").textContent = hojeCount;
+
+        if (data.length === 0) {
+          container.innerHTML = `
+            <div class="empty">
+              <div class="empty-icon">📭</div>
+              <div class="empty-text">Nenhum agendamento encontrado</div>
+            </div>`;
+          return;
+        }
+
+        const rows = data.map(a => {
+          const data_criacao = a.criado_em
+            ? new Date(a.criado_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+            : "—";
+
+          return `
+            <tr id="row-${a.id}">
+              <td><span class="horario">${a.horario}</span></td>
+              <td>${a.nome}</td>
+              <td><span class="placa">${a.placa}</span></td>
+              <td><span class="badge">${a.servico}</span></td>
+              <td style="color:var(--muted);font-size:13px">${data_criacao}</td>
+              <td><button class="btn-delete" onclick="deletar(${a.id})">🗑 Excluir</button></td>
+            </tr>`;
+        }).join("");
+
+        container.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Horário</th>
+                <th>Nome</th>
+                <th>Placa</th>
+                <th>Serviço</th>
+                <th>Agendado em</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      } catch {
+        container.innerHTML = '<div class="loading">Erro ao carregar. Tente novamente.</div>';
+      }
+    }
+
+    async function deletar(id) {
+      if (!confirm("Tem certeza que deseja excluir este agendamento?")) return;
+
+      try {
+        const res = await fetch("/api/agendamentos", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+
+        if (res.ok) {
+          document.getElementById(`row-${id}`)?.remove();
+          const total = document.getElementById("totalCount");
+          total.textContent = parseInt(total.textContent) - 1;
+          showToast("✅ Agendamento excluído!");
+        }
+      } catch {
+        showToast("❌ Erro ao excluir.");
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3000);
+    }
+
+    loadAgendamentos();
+  </script>
+</body>
+</html>
