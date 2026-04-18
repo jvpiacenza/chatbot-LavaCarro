@@ -40,24 +40,29 @@ export default async function handler(req, res) {
     // Salva agendamento quando o intent for finalizar_agendamento
     if (intent === "finalizar_agendamento") {
       const nome = params?.person?.name || "";
-      
-      // Pega dados dos contextos
+    
       const contextos = data?.queryResult?.outputContexts || [];
       const ctxHorario = contextos.find(c => c.name.includes("aguardando_horario"));
       const ctxParams = ctxHorario?.parameters || {};
-      
+    
       const placa = ctxParams?.any || "";
       const horario = ctxParams?.horario || "";
-      const servico = ctxParams?.servico || "Lavagem"; // padrão se não coletar
+      const servico = ctxParams?.servico || "Lavagem";
     
-      if (nome && placa && horario) {
+      // Log para debug
+      console.log("DADOS AGENDAMENTO:", { nome, placa, horario, servico });
+    
+      // Sempre sobrescreve o reply do Dialogflow nesse intent
+      if (!nome || !placa || !horario) {
+        reply = "Não consegui capturar todos os dados. Pode tentar novamente?";
+      } else {
         const [rows] = await db.query(
           "SELECT id FROM agendamentos WHERE horario = ?",
           [horario]
         );
     
         if (rows.length > 0) {
-          reply = `❌ O horário ${horario} já está ocupado! Por favor, escolha outro horário.`;
+          reply = `❌ O horário ${horario} já está ocupado! Por favor, escolha outro horário disponível: 8h, 10h, 14h ou 16h.`;
         } else {
           await db.query(
             "INSERT INTO agendamentos (nome, placa, servico, horario) VALUES (?, ?, ?, ?)",
